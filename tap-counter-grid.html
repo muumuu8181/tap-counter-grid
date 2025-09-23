@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>タップカウンターグリッド</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            padding: 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+        }
+
+        .version {
+            position: absolute;
+            top: -5px;
+            right: 0;
+            font-size: 12px;
+            color: #999;
+            font-weight: bold;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .multiplier-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+
+        .multiplier-btn {
+            flex: 1;
+            max-width: 70px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .multiplier-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .grid-container {
+            background: white;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 3px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell.selecting {
+            animation: pulse 0.5s infinite;
+            border: 2px solid #667eea;
+        }
+
+        .cell.selected {
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+        }
+
+        .cell:active {
+            transform: scale(0.9);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .control-button {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .clear-selection {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+        }
+
+        .increment-selected {
+            background: linear-gradient(135deg, #48c774 0%, #3ec46d 100%);
+        }
+
+        .control-button:active {
+            transform: translateY(2px);
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .selection-mode-toggle {
+            margin-bottom: 10px;
+            padding: 10px;
+            width: 100%;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .selection-mode-toggle.active {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            color: white;
+            border-color: #ff6b6b;
+        }
+
+        @media (max-width: 375px) {
+            .cell {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="version">V0.01</div>
+        <h1>タップカウンターグリッド</h1>
+
+        <div class="multiplier-buttons">
+            <button class="multiplier-btn active" data-multiplier="1">×1</button>
+            <button class="multiplier-btn" data-multiplier="2">×2</button>
+            <button class="multiplier-btn" data-multiplier="3">×3</button>
+            <button class="multiplier-btn" data-multiplier="4">×4</button>
+            <button class="multiplier-btn" data-multiplier="5">×5</button>
+        </div>
+
+        <button class="selection-mode-toggle" onclick="toggleSelectionMode()">
+            範囲選択モード: OFF
+        </button>
+
+        <div class="grid-container">
+            <div class="grid" id="grid">
+                <!-- セルは JavaScript で生成 -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="control-button increment-selected" onclick="incrementSelected()">
+                選択中を増加
+            </button>
+            <button class="control-button clear-selection" onclick="clearSelection()">
+                選択解除
+            </button>
+            <button class="control-button reset-button" onclick="resetAll()">
+                全リセット
+            </button>
+        </div>
+
+        <div class="info" id="info">
+            タップまたはドラッグで選択できます
+        </div>
+    </div>
+
+    <script>
+        const maxCount = 30;
+        const cellCount = 100;
+        let currentMultiplier = 1;
+        let selectionMode = false;
+        let isSelecting = false;
+        let selectedCells = new Set();
+        let startCell = null;
+
+        // 青色のグラデーション
+        function getBackgroundColor(count) {
+            if (count === 0) return '#ffffff';
+
+            // 0-30を0-1の範囲に正規化
+            const intensity = Math.min(count / 20, 1);
+
+            // 白から青へのグラデーション
+            const r = Math.round(255 * (1 - intensity * 0.8));
+            const g = Math.round(255 * (1 - intensity * 0.6));
+            const b = 255;
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // テキスト色を決定
+        function getTextColor(count) {
+            return count >= 10 ? '#ffffff' : '#333333';
+        }
+
+        // 倍数ボタンの設定
+        document.querySelectorAll('.multiplier-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.multiplier-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentMultiplier = parseInt(this.dataset.multiplier);
+            });
+        });
+
+        // グリッドを初期化
+        function initGrid() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < cellCount; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.count = '0';
+                cell.dataset.index = i;
+                cell.textContent = '0';
+                cell.style.backgroundColor = getBackgroundColor(0);
+                cell.style.color = getTextColor(0);
+
+                // タップイベント
+                cell.addEventListener('click', function(e) {
+                    if (!selectionMode) {
+                        // 通常モード: タップで数値増加
+                        incrementCell(this);
+                    }
+                });
+
+                // 選択モード用のイベント
+                cell.addEventListener('mousedown', function(e) {
+                    if (selectionMode) {
+                        e.preventDefault();
+                        startSelection(this);
+                    }
+                });
+
+                cell.addEventListener('mouseenter', function(e) {
+                    if (selectionMode && isSelecting) {
+                        updateSelection(this);
+                    }
+                });
+
+                cell.addEventListener('mouseup', function(e) {
+                    if (selectionMode && isSelecting) {
+                        endSelection();
+                    }
+                });
+
+                // タッチイベント（モバイル対応）
+                cell.addEventListener('touchstart', function(e) {
+                    if (selectionMode) {
+                        e.preventDefault();
+                        startSelection(this);
+                    }
+                });
+
+                cell.addEventListener('touchmove', function(e) {
+                    if (selectionMode && isSelecting) {
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (element && element.classList.contains('cell')) {
+                            updateSelection(element);
+                        }
+                    }
+                });
+
+                cell.addEventListener('touchend', function(e) {
+                    if (selectionMode && isSelecting) {
+                        e.preventDefault();
+                        endSelection();
+                    }
+                });
+
+                grid.appendChild(cell);
+            }
+        }
+
+        // セルの値を増加
+        function incrementCell(cell) {
+            let count = parseInt(cell.dataset.count);
+
+            if (count < maxCount) {
+                count = Math.min(count + currentMultiplier, maxCount);
+                cell.dataset.count = count;
+                cell.textContent = count;
+                cell.style.backgroundColor = getBackgroundColor(count);
+                cell.style.color = getTextColor(count);
+
+                // 振動フィードバック
+                if (navigator.vibrate) {
+                    navigator.vibrate(10);
+                }
+            }
+        }
+
+        // 選択開始
+        function startSelection(cell) {
+            isSelecting = true;
+            startCell = parseInt(cell.dataset.index);
+            selectedCells.clear();
+            clearSelectionDisplay();
+            selectedCells.add(startCell);
+            cell.classList.add('selected');
+        }
+
+        // 選択更新（範囲選択）
+        function updateSelection(cell) {
+            if (!startCell !== null) {
+                const endCell = parseInt(cell.dataset.index);
+                selectedCells.clear();
+                clearSelectionDisplay();
+
+                const startRow = Math.floor(startCell / 10);
+                const startCol = startCell % 10;
+                const endRow = Math.floor(endCell / 10);
+                const endCol = endCell % 10;
+
+                const minRow = Math.min(startRow, endRow);
+                const maxRow = Math.max(startRow, endRow);
+                const minCol = Math.min(startCol, endCol);
+                const maxCol = Math.max(startCol, endCol);
+
+                for (let row = minRow; row <= maxRow; row++) {
+                    for (let col = minCol; col <= maxCol; col++) {
+                        const index = row * 10 + col;
+                        selectedCells.add(index);
+                        document.querySelector(`[data-index="${index}"]`).classList.add('selected');
+                    }
+                }
+            }
+        }
+
+        // 選択終了
+        function endSelection() {
+            isSelecting = false;
+            updateInfo();
+        }
+
+        // 選択表示をクリア
+        function clearSelectionDisplay() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('selected', 'selecting');
+            });
+        }
+
+        // 選択モード切替
+        function toggleSelectionMode() {
+            selectionMode = !selectionMode;
+            const btn = document.querySelector('.selection-mode-toggle');
+            btn.textContent = `範囲選択モード: ${selectionMode ? 'ON' : 'OFF'}`;
+            btn.classList.toggle('active', selectionMode);
+
+            if (!selectionMode) {
+                clearSelection();
+            }
+
+            updateInfo();
+        }
+
+        // 選択中のセルを増加
+        function incrementSelected() {
+            selectedCells.forEach(index => {
+                const cell = document.querySelector(`[data-index="${index}"]`);
+                incrementCell(cell);
+            });
+        }
+
+        // 選択解除
+        function clearSelection() {
+            selectedCells.clear();
+            clearSelectionDisplay();
+            updateInfo();
+        }
+
+        // 情報更新
+        function updateInfo() {
+            const info = document.getElementById('info');
+            if (selectionMode) {
+                info.textContent = `選択中: ${selectedCells.size}セル | 倍数: ×${currentMultiplier}`;
+            } else {
+                info.textContent = `倍数: ×${currentMultiplier} | タップで増加`;
+            }
+        }
+
+        // すべてリセット
+        function resetAll() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.dataset.count = '0';
+                cell.textContent = '0';
+                cell.style.backgroundColor = getBackgroundColor(0);
+                cell.style.color = getTextColor(0);
+            });
+            clearSelection();
+
+            // 振動フィードバック
+            if (navigator.vibrate) {
+                navigator.vibrate(20);
+            }
+        }
+
+        // ページロード時に初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            initGrid();
+            updateInfo();
+        });
+
+        // マウスアップイベント（グローバル）
+        document.addEventListener('mouseup', () => {
+            if (isSelecting) {
+                endSelection();
+            }
+        });
+
+        document.addEventListener('touchend', () => {
+            if (isSelecting) {
+                endSelection();
+            }
+        });
+    </script>
+</body>
+</html>

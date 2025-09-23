@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>タップカウンター表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            padding: 20px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .table {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #e0e0e0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        .cell::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 70%);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .cell.tapped::after {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 1;
+        }
+
+        .reset-button {
+            margin-top: 30px;
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .reset-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 375px) {
+            .cell {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>タップカウンター</h1>
+        <div class="table" id="table">
+            <!-- セルは JavaScript で生成 -->
+        </div>
+        <button class="reset-button" onclick="resetAll()">すべてリセット</button>
+    </div>
+
+    <script>
+        const maxCount = 10;
+        const cellCount = 9;
+
+        // 青色のグラデーション（0から10まで）
+        function getBackgroundColor(count) {
+            if (count === 0) return '#ffffff';
+
+            // 1-10を0-1の範囲に正規化
+            const intensity = count / maxCount;
+
+            // 白から青へのグラデーション
+            const r = Math.round(255 * (1 - intensity * 0.8));
+            const g = Math.round(255 * (1 - intensity * 0.6));
+            const b = 255;
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // テキスト色を決定（背景が濃い場合は白に）
+        function getTextColor(count) {
+            return count >= 6 ? '#ffffff' : '#333333';
+        }
+
+        // テーブルを初期化
+        function initTable() {
+            const table = document.getElementById('table');
+            table.innerHTML = '';
+
+            for (let i = 0; i < cellCount; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.count = '0';
+                cell.textContent = '0';
+                cell.style.backgroundColor = getBackgroundColor(0);
+                cell.style.color = getTextColor(0);
+
+                cell.addEventListener('click', function() {
+                    let count = parseInt(this.dataset.count);
+
+                    if (count < maxCount) {
+                        count++;
+                        this.dataset.count = count;
+                        this.textContent = count;
+                        this.style.backgroundColor = getBackgroundColor(count);
+                        this.style.color = getTextColor(count);
+
+                        // タップエフェクト
+                        this.classList.remove('tapped');
+                        void this.offsetWidth; // リフロー強制
+                        this.classList.add('tapped');
+                        setTimeout(() => this.classList.remove('tapped'), 500);
+
+                        // 振動フィードバック（対応端末のみ）
+                        if (navigator.vibrate) {
+                            navigator.vibrate(10);
+                        }
+                    }
+                });
+
+                table.appendChild(cell);
+            }
+        }
+
+        // すべてリセット
+        function resetAll() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.dataset.count = '0';
+                cell.textContent = '0';
+                cell.style.backgroundColor = getBackgroundColor(0);
+                cell.style.color = getTextColor(0);
+            });
+
+            // 振動フィードバック
+            if (navigator.vibrate) {
+                navigator.vibrate(20);
+            }
+        }
+
+        // ページロード時に初期化
+        document.addEventListener('DOMContentLoaded', initTable);
+    </script>
+</body>
+</html>
